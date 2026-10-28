@@ -24,10 +24,16 @@ test('agent discovery follows the complete llms.txt introduction and is added on
   assert.ok(after.startsWith(introduction), 'the original introduction must precede every section');
   const discovery = after.match(/^## API and MCP\n\n(?:- .+\n)+\n/m);
   assert.ok(discovery, 'the API and MCP discovery section is present');
+  assert.equal(discovery.index, introduction.length, 'discovery must immediately follow the introduction');
   for (const url of ['/docs', '/openapi.json', '/server.json', '/mcp']) {
     assert.ok(discovery[0].includes(`https://aiengineeringfromscratch.com${url}`));
   }
   assert.equal(after.replace(discovery[0], ''), before);
   run('site/build-agents.js');
   assert.equal(readLlms(), after, 'rebuilding must not duplicate discovery links');
+
+  const legacy = '## API, MCP, and CLI\n\n- [Old API](https://example.com/api)\n\n';
+  fs.writeFileSync(llmsPath, legacy + before + discovery[0]);
+  run('site/build-agents.js');
+  assert.equal(readLlms(), after, 'old and duplicate discovery sections must be relocated and replaced');
 });
